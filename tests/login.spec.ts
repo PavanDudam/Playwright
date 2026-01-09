@@ -10,6 +10,7 @@ test('TC_LOGIN_01 - valid user can login successfully', async ({ page }) => {
 
   // Click Login
   await page.getByRole('button', { name: 'Login' }).click();
+  //i am new
 
   // ✅ Correct assertion (URL-based, stable)
   await expect(page).toHaveURL(/.*dashboard/);
