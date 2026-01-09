@@ -1,0 +1,65 @@
+name: Playwright Tests
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch: # Allows you to run manually from GitHub UI
+
+permissions:
+  contents: write # REQUIRED: Allows the bot to write to the gh-pages branch
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps
+
+      - name: Run Playwright tests
+        run: npx playwright test
+
+      # --- HISTORY LOGIC STARTS HERE ---
+      
+      - name: Deploy Report with History
+        if: always() # Run even if tests fail
+        run: |
+          # 1. Configure Git
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # 2. Clone the existing gh-pages branch (to get history)
+          # If it fails (first run), creates an empty folder
+          git clone --branch gh-pages https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git gh-pages || mkdir gh-pages
+
+          # 3. Create a clean folder name for this run (e.g., "run-25")
+          RUN_FOLDER="gh-pages/run-${{ github.run_number }}"
+          mkdir -p $RUN_FOLDER
+          
+          # 4. Copy the new report into that folder
+          cp -r playwright-report/* $RUN_FOLDER/
+
+          # 5. Generate/Update the "Index" Page (The Table of Contents)
+          cd gh-pages
+          
+          # Create index.html if it doesn't exist
+          if [ ! -f index.html ]; then
+            echo "<html><head><title>Test History</title><style>body{font-family:sans-serif; padding:20px;} li{margin:10px 0;} a{text-decoration:none; color:#0366d6;} a:hover{text-decoration:underline;}</style></head><body><h1>Test Run History</h1><ul>" > index.html
+          fi
+          
+          # Add the new link to the TOP of the list (using a temporary file)
+          echo "<li><a href='run-${{ github.run_number }}/index.html'>Run #${{ github.run_number }}</a> - $(date)</li>" > new_entry.html
+          # Insert the new entry after the <body> tag (simple hack to keep newest on top)
+          sed -i '/<ul>/r new_entry.html' index.html
+          rm new_entry.html
+
+          # 6. Push changes back to GitHub
+          git add .
+          git commit -m "Deploy report for run ${{ github.run_number }}"
+          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git gh-pages
