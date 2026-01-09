@@ -5,7 +5,6 @@ on:
   pull_request:
     branches: [ main, master ]
 
-# ADD THIS SECTION BELOW
 permissions:
   contents: write
   pages: write
@@ -57,8 +56,10 @@ jobs:
             echo "<html><head><title>Test History</title><style>body{font-family:sans-serif; padding:20px;} li{margin:10px 0;} a{text-decoration:none; color:#0366d6;} a:hover{text-decoration:underline;}</style></head><body><h1>Test Run History</h1><ul>" > index.html
           fi
           
-          # Add the new link to the TOP of the list (using a temporary file)
-          echo "<li><a href='run-${{ github.run_number }}/index.html'>Run #${{ github.run_number }}</a> - $(date)</li>" > new_entry.html
+          # --- CHANGE IS HERE: Added TZ='Asia/Kolkata' ---
+          # Add the new link to the TOP of the list
+          echo "<li><a href='run-${{ github.run_number }}/index.html'>Run #${{ github.run_number }}</a> - $(TZ='Asia/Kolkata' date)</li>" > new_entry.html
+          
           # Insert the new entry after the <body> tag (simple hack to keep newest on top)
           sed -i '/<ul>/r new_entry.html' index.html
           rm new_entry.html
