@@ -2,10 +2,14 @@ name: Playwright Tests
 on:
   push:
     branches: [ main, master ]
-  workflow_dispatch: # Allows you to run manually from GitHub UI
+  pull_request:
+    branches: [ main, master ]
 
+# ADD THIS SECTION BELOW
 permissions:
-  contents: write # REQUIRED: Allows the bot to write to the gh-pages branch
+  contents: write
+  pages: write
+  id-token: write
 
 jobs:
   test:
